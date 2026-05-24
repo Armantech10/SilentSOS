@@ -1,98 +1,95 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Animated, Easing } from 'react-native';
+import { useRouter } from 'expo-router';
+import { EyeOff } from 'lucide-react-native';
+import { useApp } from '../context/AppContext';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+export default function SplashScreen() {
+  const router = useRouter();
+  const { user, loading } = useApp();
+  
+  // Custom premium micro-animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  useEffect(() => {
+    // Run animations in parallel
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Small rotating glow pulse
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 8000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Wait and dispatch
+    const timer = setTimeout(() => {
+      if (!loading) {
+        if (user) {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/(auth)/onboarding');
+        }
+      }
+    }, 2800);
+
+    return () => clearTimeout(timer);
+  }, [user, loading]);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View className="flex-1 items-center justify-center bg-neutral-50 px-8">
+      {/* Background Calm Ambient Radial Glow (simulated) */}
+      <View className="absolute w-80 h-80 rounded-full bg-primary-100/30 blur-3xl" style={{ top: '25%' }} />
+
+      <Animated.View 
+        style={{
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+          alignItems: 'center',
+        }}
+        className="flex-col items-center justify-center"
+      >
+        {/* Safe Innocent Shield and Hidden Eye Logo */}
+        <View className="w-24 h-24 rounded-[32px] bg-white border border-neutral-100 items-center justify-center shadow-md mb-6 relative">
+          <View className="absolute w-[86px] h-[86px] rounded-[28px] border border-primary-100/50" />
+          <EyeOff size={42} color="#1a56db" strokeWidth={1.5} />
+        </View>
+
+        {/* Clean, Elegant Typography */}
+        <Text className="text-3xl font-extrabold text-neutral-800 tracking-tight pl-1">
+          Silent<Text className="text-primary-500">SOS</Text>
+        </Text>
+        
+        <Text className="text-sm font-medium text-neutral-400 mt-2 tracking-wide text-center">
+          Safety hidden in plain sight
+        </Text>
+      </Animated.View>
+
+      {/* Very subtle status indicator */}
+      <View className="absolute bottom-16 flex-row items-center space-x-1.5">
+        <View className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-ping" />
+        <Text className="text-[10px] font-semibold text-neutral-300 uppercase tracking-widest pl-1">
+          Secured Connection
+        </Text>
+      </View>
+    </View>
   );
 }
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
